@@ -1,0 +1,524 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mkstore | متجرك المفضل</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Cairo', 'sans-serif'] },
+                    colors: {
+                        mk: {
+                            dark: '#1e1b4b',
+                            primary: '#312e81',
+                            accent: '#e11d48',
+                            accentHover: '#be123c',
+                            light: '#f3f4f6'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f3f4f6; }
+        .product-card { transition: all 0.3s ease; }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #312e81; border-radius: 4px; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-content { animation: slideIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen text-gray-800">
+
+    <!-- Navbar -->
+    <header class="sticky top-0 z-50 shadow-lg bg-mk-dark text-white">
+        <div class="flex items-center justify-between py-3 px-4 max-w-7xl mx-auto w-full">
+            <div onclick="app.resetHome()" class="flex items-center cursor-pointer group">
+                <div class="bg-mk-accent p-1.5 rounded-lg ml-2 group-hover:bg-white group-hover:text-mk-accent transition-colors">
+                    <i class="fas fa-shopping-bag text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black tracking-tighter leading-none">mk<span class="text-mk-accent">store</span></h1>
+                </div>
+            </div>
+
+            <div class="hidden md:flex flex-grow max-w-xl mx-8">
+                <input type="text" id="searchInput" placeholder="ابحث عن (هودي، تيشيرت، شنطة...)" class="w-full px-4 py-2 rounded-r-lg text-gray-800 focus:outline-none">
+                <button onclick="app.search()" class="bg-mk-accent px-6 rounded-l-lg hover:bg-mk-accentHover transition font-bold">بحث</button>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div onclick="app.openOrders()" class="hidden sm:flex flex-col items-center cursor-pointer hover:text-mk-accent transition">
+                    <span class="text-xs text-gray-300">متابعة</span>
+                    <span class="font-bold text-sm">الطلبات</span>
+                </div>
+                
+                <div onclick="app.toggleCart()" class="relative cursor-pointer bg-white/10 p-2 rounded-full hover:bg-mk-accent transition group">
+                    <span id="cartBadge" class="absolute -top-1 -right-1 bg-mk-accent text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-mk-dark">0</span>
+                    <i class="fas fa-shopping-cart text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="md:hidden bg-mk-primary p-2">
+            <div class="flex max-w-7xl mx-auto">
+                <input type="text" id="mobileSearchInput" placeholder="بحث سريع..." class="w-full px-3 py-1.5 rounded-r text-sm focus:outline-none text-gray-800">
+                <button onclick="app.search(true)" class="bg-mk-accent px-4 rounded-l text-sm font-bold">بحث</button>
+            </div>
+        </div>
+        
+        <div class="bg-white border-b shadow-sm overflow-x-auto">
+            <div class="flex max-w-7xl mx-auto px-4 py-2 gap-4 text-sm font-bold min-w-max">
+                <button onclick="app.filterCat('all')" class="text-mk-primary hover:text-mk-accent transition focus:text-mk-accent">الكل</button>
+                <button onclick="app.filterCat('hoodies')" class="text-gray-600 hover:text-mk-accent transition focus:text-mk-accent">هوديز</button>
+                <button onclick="app.filterCat('sweatshirts')" class="text-gray-600 hover:text-mk-accent transition focus:text-mk-accent">سويت شيرت</button>
+                <button onclick="app.filterCat('tshirts')" class="text-gray-600 hover:text-mk-accent transition focus:text-mk-accent">تيشيرت أطفال</button>
+                <button onclick="app.filterCat('bags')" class="text-gray-600 hover:text-mk-accent transition focus:text-mk-accent">توتي باج</button>
+                <button onclick="app.filterCat('pouches')" class="text-gray-600 hover:text-mk-accent transition focus:text-mk-accent">شنط صغيرة</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow w-full max-w-7xl mx-auto px-4 py-8">
+        
+        <div class="relative bg-gradient-to-r from-gray-900 to-mk-dark rounded-2xl p-6 md:p-10 mb-8 text-white shadow-xl overflow-hidden">
+            <div class="relative z-10">
+                <span class="bg-mk-accent text-xs font-bold px-2 py-1 rounded mb-2 inline-block">كولكشن الشتاء</span>
+                <h2 class="text-2xl md:text-4xl font-bold mb-3">أقوى تشكيلة هوديز <br>وتيشرتات وطباعة</h2>
+                <button onclick="app.scrollToGrid()" class="bg-white text-mk-dark font-bold py-2 px-6 rounded-lg hover:bg-gray-100 transition text-sm md:text-base">تصفح الآن</button>
+            </div>
+            <div class="absolute left-0 top-0 h-full w-full opacity-20 flex justify-end items-center pr-10">
+                <i class="fas fa-tshirt text-9xl"></i>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-end mb-4 border-b border-gray-200 pb-2">
+            <h2 id="pageTitle" class="text-xl font-bold text-mk-dark flex items-center gap-2">
+                <i class="fas fa-layer-group text-mk-accent"></i> كل المنتجات
+            </h2>
+        </div>
+
+        <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"></div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-mk-dark text-white mt-10 border-t-4 border-mk-accent pt-10 pb-6">
+        <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-right">
+            <div class="bg-white/5 p-5 rounded-xl border border-white/10">
+                <h3 class="text-lg font-bold text-mk-accent mb-3">صاحب المتجر</h3>
+                <div class="flex items-center justify-center md:justify-start gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-full bg-mk-primary flex items-center justify-center border border-mk-accent">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold">محمد خالد البهي</p>
+                        <p class="text-xs text-gray-400">المدير العام</p>
+                    </div>
+                </div>
+                <a href="https://wa.me/201070199294" target="_blank" class="block w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition font-bold text-sm">
+                    <i class="fab fa-whatsapp text-lg ml-1"></i> تواصل واتساب
+                </a>
+            </div>
+            <div>
+                <h4 class="font-bold text-lg mb-4 border-b border-mk-accent inline-block pb-1">روابط مهمة</h4>
+                <ul class="space-y-2 text-gray-300 text-sm">
+                    <li><button onclick="app.openPrivacy()" class="hover:text-mk-accent transition">سياسة الخصوصية</button></li>
+                    <li><button onclick="app.openOrders()" class="hover:text-mk-accent transition">تتبع الطلبات</button></li>
+                    <li><button onclick="app.openModal('الشروط', 'تطبق الشروط والأحكام...')" class="hover:text-mk-accent transition">الشروط والأحكام</button></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-lg mb-4 border-b border-mk-accent inline-block pb-1">عن mkstore</h4>
+                <p class="text-gray-400 text-sm leading-relaxed">
+                    متجر متخصص في الطباعة على الملابس والشنط بأعلى جودة. هوديز، تيشيرتات، وشنط بتصاميم مميزة تناسب جميع الأذواق.
+                </p>
+            </div>
+        </div>
+        <div class="text-center text-gray-600 text-xs mt-8 border-t border-white/10 pt-4">
+            &copy; 2025 جميع الحقوق محفوظة لـ mkstore
+        </div>
+    </footer>
+
+    <!-- Modals -->
+    <div id="cartModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="app.toggleCart()"></div>
+        <div class="absolute left-0 top-0 h-full w-full md:w-[450px] md:right-auto bg-white shadow-2xl transform transition-transform flex flex-col modal-content">
+            <div class="bg-mk-dark text-white p-4 flex justify-between items-center shadow-md shrink-0">
+                <h2 class="text-lg font-bold"><i class="fas fa-shopping-basket ml-2"></i> سلة المشتريات</h2>
+                <button onclick="app.toggleCart()" class="hover:text-mk-accent transition"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="flex-grow overflow-y-auto p-4 bg-gray-50">
+                <div class="mb-6">
+                    <h3 class="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wider border-b pb-1">1. المنتجات المختارة</h3>
+                    <div id="cartItems" class="space-y-3 min-h-[50px]"></div>
+                </div>
+                <div id="checkoutFormSection" class="bg-white p-4 rounded-xl border border-mk-primary/20 shadow-sm hidden">
+                    <h3 class="text-sm font-bold text-mk-primary mb-3 uppercase tracking-wider border-b pb-1 flex items-center gap-2">
+                        <i class="fas fa-map-marker-alt"></i> 2. بيانات التوصيل
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 block mb-1">الاسم بالكامل</label>
+                            <input type="text" id="c_name" class="w-full border rounded p-2 text-sm focus:border-mk-accent focus:outline-none bg-gray-50" placeholder="اسمك الثلاثي">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 block mb-1">رقم الهاتف</label>
+                            <input type="tel" id="c_phone" class="w-full border rounded p-2 text-sm focus:border-mk-accent focus:outline-none bg-gray-50" placeholder="01xxxxxxxxx">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 block mb-1">العنوان بالتفصيل</label>
+                            <textarea id="c_address" rows="2" class="w-full border rounded p-2 text-sm focus:border-mk-accent focus:outline-none bg-gray-50" placeholder="المحافظة - المدينة - اسم الشارع"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div id="emptyCartMsg" class="hidden text-center py-10 text-gray-400">
+                    <i class="fas fa-shopping-cart text-4xl mb-2 opacity-50"></i>
+                    <p>السلة فارغة حالياً</p>
+                </div>
+            </div>
+            <div class="p-4 bg-white border-t shadow-[0_-4px_10px_rgba(0,0,0,0.05)] shrink-0">
+                <div class="flex justify-between items-center mb-3 text-lg font-bold">
+                    <span>الإجمالي:</span>
+                    <span id="cartTotal" class="text-mk-accent">0 ج.م</span>
+                </div>
+                <button onclick="app.processCheckout()" class="w-full bg-mk-accent hover:bg-mk-accentHover text-white py-3 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2">
+                    <i class="fab fa-whatsapp text-xl"></i> <span>تأكيد الطلب</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="privacyModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onclick="app.closePrivacy()">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto modal-content" onclick="event.stopPropagation()">
+            <div class="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-mk-dark">سياسة الخصوصية</h2>
+                <button onclick="app.closePrivacy()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 text-sm text-gray-600 space-y-4">
+                <p>نحن في <strong>mkstore</strong> نحترم خصوصيتك. البيانات التي نطلبها (الاسم، العنوان، الهاتف) تستخدم <strong>فقط</strong> لتوصيل طلبك.</p>
+                <p class="font-bold text-mk-dark">مالك الموقع: محمد خالد البهي</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="infoModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/70 p-4" onclick="document.getElementById('infoModal').classList.add('hidden')">
+        <div class="bg-white rounded-lg p-6 max-w-sm w-full text-center" onclick="event.stopPropagation()">
+            <h3 id="infoTitle" class="text-lg font-bold mb-2"></h3>
+            <div id="infoBody" class="text-sm text-gray-600 mb-4 max-h-40 overflow-y-auto"></div>
+            <button onclick="document.getElementById('infoModal').classList.add('hidden')" class="bg-mk-primary text-white px-4 py-2 rounded text-sm">إغلاق</button>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-mk-dark text-white px-5 py-2 rounded-full shadow-lg hidden z-[60] flex items-center gap-2 text-sm border border-mk-primary">
+        <i class="fas fa-check-circle text-green-400"></i> <span id="toastMsg"></span>
+    </div>
+
+    <script>
+        const OWNER_PHONE = "201070199294"; 
+
+        // تم التبديل كما طلبت:
+        // 2 -> مكان 3 (الصورة التي كانت في 2 ستظهر في 3)
+        // 3 -> مكان 16 (الصورة التي كانت في 3 ستظهر في 16)
+        // 16 -> مكان 2 (الصورة التي كانت في 16 ستظهر في 2)
+        const productsDB = [
+            // 1. 
+            { id: 101, name: "هودي ريال مدريد | Emirates", price: 450, cat: "hoodies", img: "https://i.ibb.co/TMfYVd95/mockup-2-v-YIQQx-Hl-ZA.jpg" },
+            
+            // 2. (كانت صورة 16: شنطة Stitch Black)
+            { id: 102, name: "هودي الأهلي في كأس العالم", price: 450, cat: "hoodies", img: "https://i.ibb.co/r2Q6gxd7/mockup-2-MCt-G5-Ej0-NK.jpg" },
+            
+            // 3. (كانت صورة 2: هودي الأهلي)
+            { id: 103, name: "هودي CR7 | Ronaldo", price: 475, cat: "hoodies", img: "https://i.ibb.co/KxSvCzHP/mockup-2-p7guki-DYKX.jpg" },
+            
+            // 4. 
+            { id: 104, name: "هودي برشلونة | Spotify", price: 450, cat: "hoodies", img: "https://i.ibb.co/0TCPpM5/mockup-12-w9hk-Pwk2-A4.jpg" },
+            
+            // 5.
+            { id: 201, name: "سويت شيرت Jujutsu Kaisen", price: 450, cat: "sweatshirts", img: "https://i.ibb.co/BV0BJQ8n/mockup-7-7w-B9-HW2js-V.jpg" },
+            
+            // 6.
+            { id: 202, name: "سويت شيرت مانشستر سيتي", price: 415, cat: "sweatshirts", img: "https://i.ibb.co/FLSw3BdV/mockup-7-u7-XTc-Ni-UCb.jpg" },
+            
+            // 7. 
+            { id: 301, name: "تيشيرت أطفال | Egyptian", price: 225, cat: "tshirts", img: "https://i.ibb.co/XZSMXZ0p/mockup-9-ACPc-Pj2c9r.jpg" },
+            
+            // 8. 
+            { id: 302, name: "تيشيرت أطفال | Stitch Design", price: 360, cat: "tshirts", img: "https://i.ibb.co/LXZVX60v/mockup-9-rcq-Hr-FIk-WP.jpg" },
+            
+            // 9. 
+            { id: 303, name: "تيشيرت أطفال | CR7 Back", price: 310, cat: "tshirts", img: "https://i.ibb.co/bjZ5jH1Z/mockup-9-TAq-Aj-Iz-Bln.jpg" },
+            
+            // 10. 
+            { id: 304, name: "تيشيرت أطفال | الزمالك قلبي", price: 260, cat: "tshirts", img: "https://i.ibb.co/HD2WcpFW/mockup-2-In-XMbry6-Zy.jpg" },
+            
+            // 11. 
+            { id: 401, name: "توتي باج | الزمالك", price: 165, cat: "bags", img: "https://i.ibb.co/VYW970SN/mockup-10-n-T4j9f1-RUd.jpg" },
+            
+            // 12. 
+            { id: 402, name: "توتي باج | فروزن Frozen", price: 225, cat: "bags", img: "https://i.ibb.co/DfV9LNJZ/mockup-10-o-Q3xos2s-Bt.jpg" },
+            
+            // 13. 
+            { id: 403, name: "توتي باج | Hinata Hyuga", price: 155, cat: "bags", img: "https://i.ibb.co/Hfbbwj6Z/mockup-10-co-B5en-Zh1-C.jpg" },
+            
+            // 14. 
+            { id: 501, name: "شنطة يد | طبيب جراح", price: 80, cat: "pouches", img: "https://i.ibb.co/XrfdhLFq/mockup-12-u-Hosk-C7-Gok.jpg" },
+            
+            // 15. 
+            { id: 502, name: "شنطة يد | DONUT Give UP", price: 110, cat: "pouches", img: "https://i.ibb.co/hFWn3hbz/mockup-12-Pn-K9-Kz6w-PX.jpg" },
+            
+            // 16. (كانت صورة 3: هودي CR7)
+            { id: 503, name: "شنطة يد | Stitch Black", price: 110, cat: "pouches", img: "https://i.ibb.co/xqXxFD9c/mockup-12-Zan-Edqsz-GY.jpg" },
+            
+            // 17. 
+            { id: 504, name: "شنطة يد | Stitch Cute Beige", price: 110, cat: "pouches", img: "https://i.ibb.co/Kjsk3hZJ/mockup-9-xv-Q5-Lk6aa8.jpg" },
+        ];
+
+        const app = {
+            cart: [],
+            orders: [],
+            currentFilter: 'all',
+
+            init: () => {
+                const savedCart = localStorage.getItem('mk_final_cart');
+                if(savedCart) app.cart = JSON.parse(savedCart);
+                
+                const savedOrders = localStorage.getItem('mk_final_orders');
+                if(savedOrders) app.orders = JSON.parse(savedOrders);
+
+                app.renderProducts(productsDB);
+                app.updateCartUI();
+            },
+
+            renderProducts: (list) => {
+                const grid = document.getElementById('productsGrid');
+                if(list.length === 0) {
+                    grid.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">لا توجد منتجات في هذا القسم حالياً</div>';
+                    return;
+                }
+                grid.innerHTML = list.map(p => `
+                    <div class="product-card bg-white rounded-xl border border-gray-100 overflow-hidden flex flex-col relative group h-full">
+                        <div class="h-64 bg-gray-50 flex items-center justify-center relative overflow-hidden">
+                            <img src="${p.img}" alt="${p.name}" onerror="this.src='https://placehold.co/48x48/808080/FFFFFF?text=صورة'" class="w-12 h-12 object-cover bg-gray-50 rounded">
+                            <button onclick="app.addToCart(${p.id})" class="absolute bottom-3 right-3 bg-mk-accent text-white w-10 h-10 rounded-full shadow-lg transform translate-y-10 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center hover:bg-mk-accentHover">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="p-4 flex flex-col flex-grow">
+                            <div class="text-[10px] text-mk-primary font-bold uppercase tracking-wide mb-1 opacity-70">${app.getCatName(p.cat)}</div>
+                            <h3 class="font-bold text-gray-800 text-sm mb-2 line-clamp-2 leading-relaxed">${p.name}</h3>
+                            <div class="mt-auto flex items-end justify-between border-t border-gray-100 pt-3">
+                                <span class="font-black text-mk-accent text-lg">${p.price} <span class="text-xs font-normal text-gray-500">ج.م</span></span>
+                                <div class="flex text-yellow-400 text-[10px]">
+                                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            getCatName: (cat) => {
+                const map = {
+                    'hoodies': 'هودي',
+                    'sweatshirts': 'سويت شيرت',
+                    'tshirts': 'تيشيرت أطفال',
+                    'bags': 'شنطة توتي باج',
+                    'pouches': 'شنطة صغيرة / بورتفيه'
+                };
+                return map[cat] || cat;
+            },
+
+            filterCat: (cat) => {
+                app.currentFilter = cat;
+                document.querySelectorAll('.border-b > div > button').forEach(btn => {
+                    const btnCat = btn.getAttribute('onclick').match(/'(.*)'/)[1];
+                    if (btnCat === cat) {
+                        btn.classList.add('text-mk-accent');
+                        btn.classList.remove('text-gray-600');
+                    } else {
+                        btn.classList.remove('text-mk-accent');
+                        btn.classList.add('text-gray-600');
+                    }
+                });
+
+                if(cat === 'all') {
+                    app.renderProducts(productsDB);
+                    document.getElementById('pageTitle').innerText = 'كل المنتجات';
+                } else {
+                    const filtered = productsDB.filter(p => p.cat === cat);
+                    app.renderProducts(filtered);
+                    document.getElementById('pageTitle').innerText = app.getCatName(cat);
+                }
+            },
+
+            addToCart: (id) => {
+                const p = productsDB.find(x => x.id === id);
+                const exist = app.cart.find(x => x.id === id);
+                if(exist) exist.qty++; else app.cart.push({...p, qty: 1});
+                app.save();
+                app.updateCartUI();
+                app.showToast(`تمت إضافة ${p.name}`);
+            },
+
+            removeFromCart: (id) => {
+                app.cart = app.cart.filter(x => x.id !== id);
+                app.save();
+                app.updateCartUI();
+            },
+
+            updateCartUI: () => {
+                document.getElementById('cartBadge').innerText = app.cart.reduce((a,b)=>a+b.qty,0);
+                const container = document.getElementById('cartItems');
+                const formSection = document.getElementById('checkoutFormSection');
+                const emptyMsg = document.getElementById('emptyCartMsg');
+                
+                if(app.cart.length === 0) {
+                    container.innerHTML = '';
+                    emptyMsg.classList.remove('hidden');
+                    formSection.classList.add('hidden');
+                    document.getElementById('cartTotal').innerText = '0 ج.م';
+                    return;
+                }
+
+                emptyMsg.classList.add('hidden');
+                formSection.classList.remove('hidden');
+
+                let total = 0;
+                container.innerHTML = app.cart.map(item => {
+                    total += item.price * item.qty;
+                    return `
+                        <div class="flex gap-3 bg-white p-2 rounded border border-gray-100 relative">
+                            <img src="${item.img}" onerror="this.src='https://placehold.co/48x48/808080/FFFFFF?text=صورة'" class="w-12 h-12 object-cover bg-gray-50 rounded">
+                            <div class="flex-grow">
+                                <h4 class="font-bold text-xs text-mk-dark line-clamp-1">${item.name}</h4>
+                                <div class="flex justify-between items-center mt-1">
+                                    <span class="text-mk-accent font-bold text-xs">${item.price} ج.م</span>
+                                    <span class="text-[10px] bg-gray-100 px-1.5 rounded text-gray-600">العدد: ${item.qty}</span>
+                                </div>
+                            </div>
+                            <button onclick="app.removeFromCart(${item.id})" class="text-gray-300 hover:text-red-500 px-1">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+                
+                document.getElementById('cartTotal').innerText = total + ' ج.م';
+            },
+
+            processCheckout: () => {
+                if(app.cart.length === 0) {
+                    app.openModal('خطأ', 'السلة فارغة، يرجى إضافة منتجات أولاً.');
+                    return;
+                }
+
+                const name = document.getElementById('c_name').value.trim();
+                const phone = document.getElementById('c_phone').value.trim();
+                const address = document.getElementById('c_address').value.trim();
+
+                if(!name || !phone || !address) {
+                    app.openModal('بيانات ناقصة', '⚠️ يرجى ملء جميع بيانات التوصيل (الاسم، الهاتف، العنوان) لإتمام الطلب.');
+                    return;
+                }
+
+                const totalStr = document.getElementById('cartTotal').innerText;
+                const order = { id: Date.now(), date: new Date().toLocaleDateString('ar-EG'), total: totalStr, items: [...app.cart], customer: { name, phone, address } };
+                app.orders.push(order);
+
+                let msg = `*طلب جديد من متجر mkstore* 🛍️%0a`;
+                msg += `-----------------------%0a`;
+                msg += `👤 *الاسم:* ${name}%0a`;
+                msg += `📱 *الهاتف:* ${phone}%0a`;
+                msg += `📍 *العنوان:* ${address}%0a`;
+                msg += `-----------------------%0a`;
+                msg += `*🛒 المنتجات:*%0a`;
+                app.cart.forEach(item => {
+                    msg += `▫️ ${item.name} (عدد ${item.qty})%0a`;
+                });
+                msg += `-----------------------%0a`;
+                msg += `💰 *الإجمالي:* ${totalStr}%0a`;
+
+                app.cart = [];
+                app.save();
+                localStorage.setItem('mk_final_orders', JSON.stringify(app.orders));
+                app.updateCartUI();
+                app.toggleCart();
+                app.showToast('تم إعداد الطلب بنجاح. سيتم تحويلك للواتساب للتأكيد.');
+
+                window.open(`https://wa.me/${OWNER_PHONE}?text=${msg}`, '_blank');
+            },
+
+            save: () => {
+                localStorage.setItem('mk_final_cart', JSON.stringify(app.cart));
+            },
+
+            toggleCart: () => document.getElementById('cartModal').classList.toggle('hidden'),
+            openPrivacy: () => document.getElementById('privacyModal').classList.remove('hidden'),
+            closePrivacy: () => document.getElementById('privacyModal').classList.add('hidden'),
+            scrollToGrid: () => document.getElementById('productsGrid').scrollIntoView({behavior: 'smooth'}),
+
+            search: (isMobile = false) => {
+                const id = isMobile ? 'mobileSearchInput' : 'searchInput';
+                const q = document.getElementById(id).value.toLowerCase();
+                const filtered = productsDB.filter(p => p.name.toLowerCase().includes(q) || app.getCatName(p.cat).includes(q));
+                app.renderProducts(filtered);
+                document.getElementById('pageTitle').innerText = q ? `نتائج البحث: "${q}"` : 'كل المنتجات';
+            },
+
+            openOrders: () => {
+                if(app.orders.length === 0) {
+                    app.openModal('سجل الطلبات', 'لا توجد طلبات سابقة.');
+                    return;
+                }
+                const html = app.orders.map(o => `
+                    <div class="bg-gray-50 p-3 mb-3 rounded-lg border border-gray-200 text-right">
+                        <div class="flex justify-between items-center font-bold text-sm">
+                            <span class="text-mk-dark">رقم الطلب: #${o.id.toString().slice(-6)}</span>
+                            <span class="text-mk-accent">${o.total}</span>
+                        </div>
+                        <div class="text-[10px] text-gray-400 mt-1">${o.date}</div>
+                    </div>
+                `).join('');
+                app.openModal('سجل الطلبات السابقة', html);
+            },
+
+            openModal: (title, body) => {
+                document.getElementById('infoTitle').innerText = title;
+                if (body.includes('<') && body.includes('>')) {
+                    document.getElementById('infoBody').innerHTML = body;
+                } else {
+                    document.getElementById('infoBody').innerText = body;
+                }
+                document.getElementById('infoModal').classList.remove('hidden');
+            },
+
+            resetHome: () => {
+                app.filterCat('all');
+                document.getElementById('searchInput').value = '';
+                document.getElementById('mobileSearchInput').value = '';
+            },
+
+            showToast: (msg) => {
+                const t = document.getElementById('toast');
+                document.getElementById('toastMsg').innerText = msg;
+                t.classList.remove('hidden');
+                setTimeout(() => t.classList.add('hidden'), 3000);
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', app.init);
+    </script>
+</body>
+</html>
+
